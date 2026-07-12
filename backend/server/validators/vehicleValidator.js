@@ -1,5 +1,5 @@
 export const validateCreateVehicle = (req, res, next) => {
-  const { vin, registrationNumber, model, status } = req.body;
+  const { vin, registrationNumber, model, status, capacity } = req.body;
 
   if (!vin || typeof vin !== 'string' || vin.trim() === '') {
     return res.status(400).json({ error: 'VIN is required and must be a non-empty string' });
@@ -17,11 +17,15 @@ export const validateCreateVehicle = (req, res, next) => {
     return res.status(400).json({ error: 'Status must be a non-empty string' });
   }
 
+  if (capacity !== undefined && (typeof capacity !== 'number' || capacity <= 0)) {
+    return res.status(400).json({ error: 'Capacity must be a positive number' });
+  }
+
   next();
 };
 
 export const validateUpdateVehicle = (req, res, next) => {
-  const { vin, registrationNumber, model, status } = req.body;
+  const { vin, registrationNumber, model, status, capacity } = req.body;
   const id = parseInt(req.params.id, 10);
 
   if (isNaN(id)) {
@@ -29,8 +33,8 @@ export const validateUpdateVehicle = (req, res, next) => {
   }
 
   // Check if at least one field is provided
-  if (vin === undefined && registrationNumber === undefined && model === undefined && status === undefined) {
-    return res.status(400).json({ error: 'At least one field (vin, registrationNumber, model, status) must be provided' });
+  if (vin === undefined && registrationNumber === undefined && model === undefined && status === undefined && capacity === undefined) {
+    return res.status(400).json({ error: 'At least one field (vin, registrationNumber, model, status, capacity) must be provided' });
   }
 
   if (vin !== undefined && (typeof vin !== 'string' || vin.trim() === '')) {
@@ -47,6 +51,10 @@ export const validateUpdateVehicle = (req, res, next) => {
 
   if (status !== undefined && (typeof status !== 'string' || status.trim() === '')) {
     return res.status(400).json({ error: 'Status must be a non-empty string' });
+  }
+
+  if (capacity !== undefined && (typeof capacity !== 'number' || capacity <= 0)) {
+    return res.status(400).json({ error: 'Capacity must be a positive number' });
   }
 
   next();

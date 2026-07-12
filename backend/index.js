@@ -7,6 +7,7 @@ import { prisma, pool } from './server/db.js';
 import authRoutes from './server/routes/authRoutes.js';
 import vehicleRoutes from './server/routes/vehicleRoutes.js';
 import driverRoutes from './server/routes/driverRoutes.js';
+import tripRoutes from './server/routes/tripRoutes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, '.env') });
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/vehicles', vehicleRoutes);
 app.use('/drivers', driverRoutes);
+app.use('/trips', tripRoutes);
 
 // Health Check Route
 app.get('/health', async (req, res) => {

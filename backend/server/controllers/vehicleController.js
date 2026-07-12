@@ -2,8 +2,8 @@ import * as vehicleService from '../services/vehicleService.js';
 
 export const create = async (req, res, next) => {
   try {
-    const { vin, registrationNumber, model, status } = req.body;
-    const vehicle = await vehicleService.createVehicle({ vin, registrationNumber, model, status });
+    const { vin, registrationNumber, model, status, capacity } = req.body;
+    const vehicle = await vehicleService.createVehicle({ vin, registrationNumber, model, status, capacity });
     res.status(201).json(vehicle);
   } catch (error) {
     next(error);

@@ -1,6 +1,6 @@
 import { prisma } from '../db.js';
 
-export const createVehicle = async ({ vin, registrationNumber, model, status }) => {
+export const createVehicle = async ({ vin, registrationNumber, model, status, capacity }) => {
   const normVin = vin.toUpperCase().trim();
   const normReg = registrationNumber.toUpperCase().trim();
 
@@ -29,6 +29,7 @@ export const createVehicle = async ({ vin, registrationNumber, model, status }) 
       registrationNumber: normReg,
       model,
       status: status || 'ACTIVE',
+      capacity: capacity !== undefined ? capacity : 5000.0,
     },
   });
 };
@@ -86,6 +87,7 @@ export const updateVehicle = async (id, data) => {
 
   if (data.model !== undefined) updates.model = data.model;
   if (data.status !== undefined) updates.status = data.status;
+  if (data.capacity !== undefined) updates.capacity = data.capacity;
 
   return await prisma.vehicle.update({
     where: { id },

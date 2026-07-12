@@ -34,8 +34,10 @@ model Vehicle {
   registrationNumber String   @unique
   model              String
   status             String   @default("ACTIVE")
+  capacity           Float    @default(5000.0)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  trips              Trip[]
 }
 
 model Driver {
@@ -48,4 +50,27 @@ model Driver {
   status        String   @default("ACTIVE")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  trips         Trip[]
+}
+
+enum TripStatus {
+  PENDING
+  DISPATCHED
+  COMPLETED
+  CANCELLED
+}
+
+model Trip {
+  id            Int        @id @default(autoincrement())
+  vehicleId     Int
+  driverId      Int
+  startLocation String
+  endLocation   String
+  cargoWeight   Float
+  status        TripStatus @default(PENDING)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id])
+  driver        Driver     @relation(fields: [driverId], references: [id])
 }

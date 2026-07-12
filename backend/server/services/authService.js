@@ -27,8 +27,8 @@ export const registerUser = async ({ email, password, name, role }) => {
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Default role to OPERATOR if not specified
-  const userRole = role ? role.toUpperCase() : 'OPERATOR';
+  // Default role to DRIVER if not specified
+  const userRole = role ? role.toUpperCase() : 'DRIVER';
 
   // Create user
   const newUser = await prisma.user.create({

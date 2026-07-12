@@ -5,10 +5,10 @@ import { authenticateToken, authorizeRoles } from '../middleware/authMiddleware.
 
 const router = Router();
 
-router.post('/', authenticateToken, authorizeRoles('ADMIN'), validateCreateDriver, driverController.create);
-router.get('/', authenticateToken, authorizeRoles('ADMIN', 'OPERATOR'), driverController.getAll);
-router.get('/:id', authenticateToken, authorizeRoles('ADMIN', 'OPERATOR'), validateDriverId, driverController.getById);
-router.put('/:id', authenticateToken, authorizeRoles('ADMIN'), validateUpdateDriver, driverController.update);
-router.delete('/:id', authenticateToken, authorizeRoles('ADMIN'), validateDriverId, driverController.remove);
+router.post('/', authenticateToken, authorizeRoles('SAFETY_OFFICER'), validateCreateDriver, driverController.create);
+router.get('/', authenticateToken, authorizeRoles('SAFETY_OFFICER', 'DRIVER'), driverController.getAll);
+router.get('/:id', authenticateToken, authorizeRoles('SAFETY_OFFICER', 'DRIVER'), validateDriverId, driverController.getById);
+router.put('/:id', authenticateToken, authorizeRoles('SAFETY_OFFICER'), validateUpdateDriver, driverController.update);
+router.delete('/:id', authenticateToken, authorizeRoles('SAFETY_OFFICER'), validateDriverId, driverController.remove);
 
 export default router;

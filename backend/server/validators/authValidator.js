@@ -24,8 +24,9 @@ export const validateRegister = (req, res, next) => {
   }
 
   if (role !== undefined) {
-    if (typeof role !== 'string' || !['ADMIN', 'OPERATOR'].includes(role.toUpperCase())) {
-      return res.status(400).json({ error: 'Role must be either ADMIN or OPERATOR' });
+    const allowedRoles = ['FLEET_MANAGER', 'DRIVER', 'SAFETY_OFFICER', 'FINANCIAL_ANALYST'];
+    if (typeof role !== 'string' || !allowedRoles.includes(role.toUpperCase())) {
+      return res.status(400).json({ error: `Role must be one of: ${allowedRoles.join(', ')}` });
     }
   }
 

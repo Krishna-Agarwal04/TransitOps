@@ -1,21 +1,22 @@
-const express = require('express');
-const cors = require('cors');
-const { PrismaClient } = require('@prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { prisma, pool } from './server/db.js';
+import authRoutes from './server/routes/authRoutes.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, '.env') });
 
 const app = express();
-
-const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Auth routes
+app.use('/auth', authRoutes);
 
 // Health Check Route
 app.get('/health', async (req, res) => {
@@ -41,6 +42,14 @@ app.get('/health', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack || err);
+  const status = err.status || 500;
+  const message = err.message || 'Internal Server Error';
+  res.status(status).json({ error: message });
 });
 
 const server = app.listen(PORT, () => {

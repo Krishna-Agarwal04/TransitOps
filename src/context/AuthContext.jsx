@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext } from 'react';
-import { apiService } from '../services/api';
+import { apiService, getApiErrorMessage } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -20,7 +20,14 @@ export const ROLE_LABELS = {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('transitops_user');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved) return null;
+    try {
+      const parsed = JSON.parse(saved);
+      return parsed?.token ? parsed : null;
+    } catch {
+      localStorage.removeItem('transitops_user');
+      return null;
+    }
   });
 
   const login = async (email, password, role = ROLES.FLEET_MANAGER) => {
@@ -38,6 +45,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('transitops_user', JSON.stringify(userData));
         return true;
       }
+      throw new Error('Login response did not include user data.');
     } catch (err) {
       console.warn("Backend auth failed or unreachable. Falling back to mock login.", err);
       const mockUser = {
@@ -57,13 +65,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('transitops_user');
   };
 
-  const switchRole = (newRole) => {
-    if (user && ROLES[newRole]) {
-      const updated = { ...user, role: newRole };
-      setUser(updated);
-      localStorage.setItem('transitops_user', JSON.stringify(updated));
-    }
-  };
+  const switchRole = () => false;
 
   return (
     <AuthContext.Provider value={{ user, login, logout, switchRole, ROLES, ROLE_LABELS }}>

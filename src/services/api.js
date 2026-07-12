@@ -11,6 +11,25 @@ const apiClient = axios.create({
   },
 });
 
+export const getApiErrorMessage = (error, fallback = 'Request failed. Please try again.') => {
+  if (error?.response?.data?.error) {
+    return error.response.data.error;
+  }
+  if (error?.response?.data?.message) {
+    return error.response.data.message;
+  }
+  if (error?.response?.status === 401) {
+    return 'Please sign in again before saving.';
+  }
+  if (error?.response?.status === 403) {
+    return 'This account does not have permission for this action. Sign in with the correct role.';
+  }
+  if (error?.code === 'ERR_NETWORK') {
+    return 'Backend is not reachable. Make sure http://localhost:3000 is running.';
+  }
+  return error?.message || fallback;
+};
+
 // Interceptor to add JWT token automatically to every request if logged in
 apiClient.interceptors.request.use((config) => {
   const saved = localStorage.getItem('transitops_user');

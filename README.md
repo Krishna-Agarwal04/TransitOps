@@ -10,7 +10,7 @@ The platform helps organizations manage their transport operations efficiently w
 
 ---
 
-## ✨ Key Features
+## ✨ Key Feature
 
 - 🔐 Secure Authentication & Role-Based Access
 - 🚚 Vehicle Registry Management

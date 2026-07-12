@@ -27,6 +27,8 @@ import {
   Pie
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { apiService } from '../services/api';
 
 // Mock list of vehicles to link expenses
 const MOCK_VEHICLES = [
@@ -54,9 +56,45 @@ const EXPENSE_CATEGORIES = ['Tolls', 'Permits', 'Insurance', 'Maintenance', 'Oth
 
 export default function Expenses() {
   const { user, ROLES } = useAuth();
+  const { showToast } = useToast();
   const [fuelLogs, setFuelLogs] = useState(INITIAL_FUEL_LOGS);
   const [expenses, setExpenses] = useState(INITIAL_EXPENSES);
-  const [vehicles] = useState(MOCK_VEHICLES);
+  const [vehicles, setVehicles] = useState(MOCK_VEHICLES);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const resVehicles = await apiService.vehicles.getAll();
+      if (resVehicles && resVehicles.data) {
+        setVehicles(resVehicles.data.map(v => ({
+          id: v.id.toString(),
+          name: v.model || v.name || 'Unknown',
+          registrationNumber: v.registrationNumber
+        })));
+      }
+
+      const resFuel = await apiService.expenses.getFuelLogs();
+      if (resFuel && resFuel.data) {
+        setFuelLogs(resFuel.data.map(f => ({
+          id: `FL-${f.id}`,
+          vehicleId: f.vehicleId.toString(),
+          vehicleName: f.vehicle?.model || `Vehicle #${f.vehicleId}`,
+          liters: f.quantity || f.liters || 50,
+          cost: f.cost || 0,
+          date: f.date ? f.date.split('T')[0] : (f.createdAt ? f.createdAt.split('T')[0] : '')
+        })));
+      }
+    } catch (err) {
+      console.warn("Could not load fuel logs, using mock fallback.", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadData();
+  }, []);
   const [activeTab, setActiveTab] = useState('fuel'); // 'fuel' or 'expenses'
 
   // Modals state
@@ -133,6 +171,24 @@ export default function Expenses() {
     };
 
     setFuelLogs([newLog, ...fuelLogs]);
+
+    const runCreate = async () => {
+      try {
+        const payload = {
+          vehicleId: parseInt(fuelVehicleId),
+          amount: litersNum,
+          cost: costNum,
+          date: new Date(fuelDate).toISOString()
+        };
+        await apiService.expenses.createFuelLog(payload);
+        showToast('Fuel log registered on backend!');
+        loadData();
+      } catch (err) {
+        console.warn("Backend save failed, saved locally.", err);
+      }
+    };
+    runCreate();
+
     setIsFuelDialogOpen(false);
   };
 

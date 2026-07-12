@@ -55,30 +55,30 @@ export const apiService = {
   trips: {
     getAll: () => apiClient.get('/trips'),
     create: (data) => apiClient.post('/trips', data),
-    dispatch: (id) => apiClient.put(`/trips/${id}/dispatch`),
-    complete: (id, data) => apiClient.put(`/trips/${id}/complete`, data), // e.g. final odometer, fuel consumed
-    cancel: (id) => apiClient.put(`/trips/${id}/cancel`),
+    dispatch: (id) => apiClient.patch(`/trips/${id}/dispatch`),
+    complete: (id) => apiClient.patch(`/trips/${id}/complete`),
+    cancel: (id) => apiClient.patch(`/trips/${id}/cancel`),
   },
 
   // Maintenance API
   maintenance: {
     getAll: () => apiClient.get('/maintenance'),
     create: (data) => apiClient.post('/maintenance', data), // puts vehicle in IN_SHOP
-    close: (id, data) => apiClient.put(`/maintenance/${id}/close`, data), // returns to AVAILABLE
+    close: (id, data) => apiClient.patch(`/maintenance/${id}`, data), // returns to AVAILABLE
   },
 
   // Expenses & Fuel API
   expenses: {
-    getAll: () => apiClient.get('/expenses'),
-    create: (data) => apiClient.post('/expenses', data),
-    getFuelLogs: () => apiClient.get('/expenses/fuel'),
-    createFuelLog: (data) => apiClient.post('/expenses/fuel', data),
+    getAll: () => apiClient.get('/fuel'),
+    create: (data) => apiClient.post('/fuel', data),
+    getFuelLogs: () => apiClient.get('/fuel'),
+    createFuelLog: (data) => apiClient.post('/fuel', data),
   },
 
   // Reports & Dashboard API
   reports: {
-    getDashboardMetrics: () => apiClient.get('/reports/dashboard'),
-    getAnalytics: () => apiClient.get('/reports/analytics'),
+    getDashboardMetrics: () => apiClient.get('/dashboard'),
+    getAnalytics: () => apiClient.get('/fuel'),
   }
 };
 

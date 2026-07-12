@@ -16,6 +16,8 @@ import {
   Calendar
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { apiService } from '../services/api';
 
 // Mock list of vehicles to link status updates
 const MOCK_VEHICLES = [
@@ -34,8 +36,47 @@ const INITIAL_MAINTENANCE = [
 
 export default function Maintenance() {
   const { user, ROLES } = useAuth();
+  const { showToast } = useToast();
   const [logs, setLogs] = useState(INITIAL_MAINTENANCE);
   const [vehicles, setVehicles] = useState(MOCK_VEHICLES);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const resVehicles = await apiService.vehicles.getAll();
+      if (resVehicles && resVehicles.data) {
+        setVehicles(resVehicles.data.map(v => ({
+          id: v.id.toString(),
+          name: v.model || v.name || 'Unknown',
+          registrationNumber: v.registrationNumber,
+          status: v.status || 'AVAILABLE'
+        })));
+      }
+
+      const resLogs = await apiService.maintenance.getAll();
+      if (resLogs && resLogs.data) {
+        setLogs(resLogs.data.map(l => ({
+          id: `MNT-${l.id}`,
+          vehicleId: l.vehicleId.toString(),
+          vehicleName: l.vehicle?.model || `Vehicle #${l.vehicleId}`,
+          description: l.description,
+          cost: l.cost || 0,
+          startDate: l.startDate ? l.startDate.split('T')[0] : '',
+          endDate: l.endDate ? l.endDate.split('T')[0] : '',
+          status: l.status || 'ACTIVE'
+        })));
+      }
+    } catch (err) {
+      console.warn("Could not load maintenance data from backend, using mock fallback.", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadData();
+  }, []);
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,6 +134,22 @@ export default function Maintenance() {
     // Update vehicle status in state to IN_SHOP
     setVehicles(vehicles.map(v => v.id === selectedVehicleId ? { ...v, status: 'IN_SHOP' } : v));
     setLogs([newLog, ...logs]);
+
+    const runCreate = async () => {
+      try {
+        const payload = {
+          vehicleId: parseInt(selectedVehicleId),
+          description
+        };
+        await apiService.maintenance.create(payload);
+        showToast('Service log registered on backend!');
+        loadData();
+      } catch (err) {
+        console.warn("Backend create failed, registered locally.", err);
+      }
+    };
+    runCreate();
+
     setIsLogOpen(false);
   };
 
@@ -105,6 +162,18 @@ export default function Maintenance() {
       
       // Update vehicle status back to AVAILABLE
       setVehicles(vehicles.map(v => v.id === log.vehicleId ? { ...v, status: 'AVAILABLE' } : v));
+
+      const runClose = async () => {
+        try {
+          const logId = id.replace('MNT-', '');
+          await apiService.maintenance.close(logId, { cost: parseFloat(log.cost || 150) });
+          showToast('Service log closed on backend!');
+          loadData();
+        } catch (err) {
+          console.warn("Backend close failed, closed locally.", err);
+        }
+      };
+      runClose();
     }
   };
 

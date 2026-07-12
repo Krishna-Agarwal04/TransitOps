@@ -28,6 +28,7 @@ import {
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { apiService } from '../services/api';
 
 // Dummy static metrics for clean SaaS visual presentation
 const INITIAL_KPIS = {
@@ -82,6 +83,37 @@ const RECENT_MAINTENANCE = [
 export default function Dashboard() {
   const { user, ROLES } = useAuth();
   const navigate = useNavigate();
+  const [kpis, setKpis] = useState(INITIAL_KPIS);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadDashboard = async () => {
+    setIsLoading(true);
+    try {
+      const res = await apiService.reports.getDashboardMetrics();
+      if (res && res.data) {
+        const stats = res.data;
+        const totalV = stats.totalVehicles || INITIAL_KPIS.activeVehicles;
+        const onTrip = stats.vehiclesOnTrip || 0;
+        setKpis({
+          activeVehicles: totalV,
+          availableVehicles: stats.availableVehicles ?? INITIAL_KPIS.availableVehicles,
+          vehiclesInMaintenance: stats.vehiclesInMaintenance ?? INITIAL_KPIS.vehiclesInMaintenance,
+          driversOnDuty: stats.totalDrivers ?? INITIAL_KPIS.driversOnDuty,
+          fleetUtilization: totalV > 0 ? Math.round((onTrip / totalV) * 100) : INITIAL_KPIS.fleetUtilization,
+          activeTrips: stats.tripsRunning ?? INITIAL_KPIS.activeTrips,
+          pendingTrips: INITIAL_KPIS.pendingTrips
+        });
+      }
+    } catch (err) {
+      console.warn("Could not load dashboard stats, using mock fallback.", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadDashboard();
+  }, []);
 
   // Filters state
   const [vehicleType, setVehicleType] = useState('All');
@@ -154,7 +186,7 @@ export default function Dashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider">Active</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{INITIAL_KPIS.activeVehicles}</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{kpis.activeVehicles}</h3>
             <p className="text-[10px] text-slate-400 font-medium mt-1">Vehicles in transit</p>
           </div>
         </div>
@@ -164,7 +196,7 @@ export default function Dashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider">Available</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{INITIAL_KPIS.availableVehicles}</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{kpis.availableVehicles}</h3>
             <p className="text-[10px] text-slate-400 font-medium mt-1">Ready for dispatch</p>
           </div>
         </div>
@@ -174,7 +206,7 @@ export default function Dashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider">In Shop</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{INITIAL_KPIS.vehiclesInMaintenance}</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{kpis.vehiclesInMaintenance}</h3>
             <p className="text-[10px] text-slate-400 font-medium mt-1">Under maintenance</p>
           </div>
         </div>
@@ -184,7 +216,7 @@ export default function Dashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider">On Duty</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{INITIAL_KPIS.driversOnDuty}</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{kpis.driversOnDuty}</h3>
             <p className="text-[10px] text-slate-400 font-medium mt-1">Drivers logged in</p>
           </div>
         </div>
@@ -194,7 +226,7 @@ export default function Dashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider">Utilization</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{INITIAL_KPIS.fleetUtilization}%</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{kpis.fleetUtilization}%</h3>
             <p className="text-[10px] text-slate-400 font-medium mt-1">Fleet activity score</p>
           </div>
         </div>
@@ -204,7 +236,7 @@ export default function Dashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider">Active Trips</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{INITIAL_KPIS.activeTrips}</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{kpis.activeTrips}</h3>
             <p className="text-[10px] text-slate-400 font-medium mt-1">Trips underway</p>
           </div>
         </div>
@@ -214,7 +246,7 @@ export default function Dashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider">Pending</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{INITIAL_KPIS.pendingTrips}</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{kpis.pendingTrips}</h3>
             <p className="text-[10px] text-slate-400 font-medium mt-1">Trips in queue</p>
           </div>
         </div>

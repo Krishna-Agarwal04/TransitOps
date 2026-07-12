@@ -8,6 +8,9 @@ import authRoutes from './server/routes/authRoutes.js';
 import vehicleRoutes from './server/routes/vehicleRoutes.js';
 import driverRoutes from './server/routes/driverRoutes.js';
 import tripRoutes from './server/routes/tripRoutes.js';
+import fuelRoutes from './server/routes/fuelRoutes.js';
+import maintenanceRoutes from './server/routes/maintenanceRoutes.js';
+import dashboardRoutes from './server/routes/dashboardRoutes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, '.env') });
@@ -23,6 +26,9 @@ app.use('/auth', authRoutes);
 app.use('/vehicles', vehicleRoutes);
 app.use('/drivers', driverRoutes);
 app.use('/trips', tripRoutes);
+app.use('/fuel', fuelRoutes);
+app.use('/maintenance', maintenanceRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 // Health Check Route
 app.get('/health', async (req, res) => {

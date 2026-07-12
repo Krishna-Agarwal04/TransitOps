@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, ROLES } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import { ProtectedLayout } from './layouts/ProtectedLayout';
 import { SidebarLayout } from './layouts/SidebarLayout';
 
@@ -18,7 +19,8 @@ import Reports from './pages/Reports';
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <ToastProvider>
+        <Router>
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
@@ -86,6 +88,7 @@ function App() {
           } />
         </Routes>
       </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }

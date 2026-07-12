@@ -19,6 +19,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 // Mock shared states for Vehicles & Drivers to test validations
 const MOCK_VEHICLES = [
@@ -46,6 +47,7 @@ const INITIAL_TRIPS = [
 
 export default function Trips() {
   const { user, ROLES } = useAuth();
+  const { showToast } = useToast();
   const [trips, setTrips] = useState(INITIAL_TRIPS);
   const [vehicles, setVehicles] = useState(MOCK_VEHICLES);
   const [drivers, setDrivers] = useState(MOCK_DRIVERS);
@@ -131,6 +133,7 @@ export default function Trips() {
     setDrivers(drivers.map(d => d.id === selectedDriverId ? { ...d, status: 'ON_TRIP' } : d));
     
     setTrips([newTrip, ...trips]);
+    showToast(`Trip ${newTrip.id} dispatched successfully!`);
     setIsDispatchOpen(false);
   };
 
@@ -180,6 +183,7 @@ export default function Trips() {
       status: 'AVAILABLE' 
     } : d));
 
+    showToast(`Trip ${selectedTrip.id} marked as completed.`);
     setIsCompleteOpen(false);
   };
 
@@ -190,6 +194,7 @@ export default function Trips() {
       // Restore vehicle and driver to AVAILABLE
       setVehicles(vehicles.map(v => v.id === trip.vehicleId ? { ...v, status: 'AVAILABLE' } : v));
       setDrivers(drivers.map(d => d.id === trip.driverId ? { ...d, status: 'AVAILABLE' } : d));
+      showToast(`Trip ${trip.id} has been cancelled.`, 'info');
     }
   };
 

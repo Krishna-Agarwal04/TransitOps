@@ -12,6 +12,8 @@ import {
   Filter
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import TableSkeleton from '../components/TableSkeleton';
 
 // Mock initial dataset for interactive demo
 const INITIAL_VEHICLES = [
@@ -26,13 +28,21 @@ const INITIAL_VEHICLES = [
 
 export default function Vehicles() {
   const { user, ROLES } = useAuth();
+  const { showToast } = useToast();
   const [vehicles, setVehicles] = useState(INITIAL_VEHICLES);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
+
+  React.useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 350);
+    return () => clearTimeout(timer);
+  }, [searchTerm, typeFilter, statusFilter]);
   const itemsPerPage = 5;
 
   // Dialog State
@@ -107,9 +117,11 @@ export default function Vehicles() {
     if (editingVehicle) {
       // Edit
       setVehicles(vehicles.map((v) => (v.id === editingVehicle.id ? vehicleData : v)));
+      showToast('Vehicle profile updated successfully!');
     } else {
       // Add
       setVehicles([...vehicles, vehicleData]);
+      showToast('New vehicle registered successfully!');
     }
 
     setIsDialogOpen(false);
@@ -118,6 +130,7 @@ export default function Vehicles() {
   const handleDelete = (id) => {
     if (confirm('Are you sure you want to delete this vehicle from the registry?')) {
       setVehicles(vehicles.filter((v) => v.id !== id));
+      showToast('Vehicle registry entry deleted successfully.', 'info');
     }
   };
 
@@ -231,7 +244,13 @@ export default function Vehicles() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {currentItems.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan="8" className="p-0">
+                    <TableSkeleton cols={8} rows={4} />
+                  </td>
+                </tr>
+              ) : currentItems.length > 0 ? (
                 currentItems.map((vehicle) => (
                   <tr key={vehicle.id} className="hover:bg-slate-50/40 transition-colors">
                     <td className="py-4 px-6 font-bold text-slate-900 flex items-center gap-2">

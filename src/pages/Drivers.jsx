@@ -15,6 +15,7 @@ import {
   AlertOctagon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 // Mock driver profiles for dynamic frontend demo
 const INITIAL_DRIVERS = [
@@ -27,6 +28,7 @@ const INITIAL_DRIVERS = [
 
 export default function Drivers() {
   const { user, ROLES } = useAuth();
+  const { showToast } = useToast();
   const [drivers, setDrivers] = useState(INITIAL_DRIVERS);
 
   // Search & Filter state
@@ -113,8 +115,10 @@ export default function Drivers() {
 
     if (editingDriver) {
       setDrivers(drivers.map((d) => (d.id === editingDriver.id ? driverData : d)));
+      showToast('Driver profile updated successfully!');
     } else {
       setDrivers([...drivers, driverData]);
+      showToast('New driver registered successfully!');
     }
 
     setIsDialogOpen(false);
@@ -123,6 +127,7 @@ export default function Drivers() {
   const handleDelete = (id) => {
     if (confirm('Are you sure you want to remove this driver profile?')) {
       setDrivers(drivers.filter((d) => d.id !== id));
+      showToast('Driver profile deleted successfully.', 'info');
     }
   };
 

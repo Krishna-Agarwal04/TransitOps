@@ -5,6 +5,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { prisma, pool } from './server/db.js';
 import authRoutes from './server/routes/authRoutes.js';
+import vehicleRoutes from './server/routes/vehicleRoutes.js';
+import driverRoutes from './server/routes/driverRoutes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, '.env') });
@@ -15,8 +17,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Auth routes
+// Routes
 app.use('/auth', authRoutes);
+app.use('/vehicles', vehicleRoutes);
+app.use('/drivers', driverRoutes);
 
 // Health Check Route
 app.get('/health', async (req, res) => {

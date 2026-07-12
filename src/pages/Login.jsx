@@ -30,9 +30,9 @@ export default function Login() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        login(email, password, role);
+        await login(email, password, role);
         setIsLoading(false);
         navigate('/dashboard');
       } catch (err) {

@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext } from 'react';
+import { apiService } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -22,16 +23,33 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const login = (email, password, role = ROLES.FLEET_MANAGER) => {
-    const mockUser = {
-      id: 'usr-1',
-      name: email.split('@')[0].toUpperCase(),
-      email,
-      role,
-    };
-    setUser(mockUser);
-    localStorage.setItem('transitops_user', JSON.stringify(mockUser));
-    return true;
+  const login = async (email, password, role = ROLES.FLEET_MANAGER) => {
+    try {
+      const response = await apiService.auth.login(email, password);
+      if (response && response.data) {
+        const userData = {
+          id: response.data.user?.id || 'usr-1',
+          name: response.data.user?.name || email.split('@')[0].toUpperCase(),
+          email: response.data.user?.email || email,
+          role: response.data.user?.role || role,
+          token: response.data.token
+        };
+        setUser(userData);
+        localStorage.setItem('transitops_user', JSON.stringify(userData));
+        return true;
+      }
+    } catch (err) {
+      console.warn("Backend auth failed or unreachable. Falling back to mock login.", err);
+      const mockUser = {
+        id: 'usr-1',
+        name: email.split('@')[0].toUpperCase(),
+        email,
+        role,
+      };
+      setUser(mockUser);
+      localStorage.setItem('transitops_user', JSON.stringify(mockUser));
+      return true;
+    }
   };
 
   const logout = () => {

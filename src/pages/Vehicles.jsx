@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import TableSkeleton from '../components/TableSkeleton';
+import { apiService } from '../services/api';
 
 // Mock initial dataset for interactive demo
 const INITIAL_VEHICLES = [
@@ -32,15 +33,46 @@ export default function Vehicles() {
   const [vehicles, setVehicles] = useState(INITIAL_VEHICLES);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
 
+  const loadVehicles = async () => {
+    setIsLoading(true);
+    try {
+      const res = await apiService.vehicles.getAll();
+      if (res && res.data) {
+        const backendVehicles = res.data.map(v => {
+          const match = INITIAL_VEHICLES.find(iv => iv.registrationNumber.toLowerCase() === v.registrationNumber.toLowerCase());
+          return {
+            id: v.id.toString(),
+            name: v.model || v.name || (match ? match.name : 'Unknown Model'),
+            registrationNumber: v.registrationNumber,
+            type: v.type || (match ? match.type : 'Truck'),
+            maxLoadCapacity: v.capacity || (match ? match.maxLoadCapacity : 5000),
+            odometer: v.odometer || (match ? match.odometer : 10000),
+            acquisitionCost: v.acquisitionCost || (match ? match.acquisitionCost : 25000),
+            status: v.status || (match ? match.status : 'AVAILABLE'),
+            vin: v.vin || ''
+          };
+        });
+        setVehicles(backendVehicles);
+      }
+    } catch (err) {
+      console.warn("Could not load vehicles from backend, using mock fallback data.", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadVehicles();
+  }, []);
+
   React.useEffect(() => {
     setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 350);
+    const timer = setTimeout(() => setIsLoading(false), 200);
     return () => clearTimeout(timer);
   }, [searchTerm, typeFilter, statusFilter]);
   const itemsPerPage = 5;
@@ -124,13 +156,46 @@ export default function Vehicles() {
       showToast('New vehicle registered successfully!');
     }
 
+    const runSave = async () => {
+      try {
+        const payload = {
+          model: name,
+          registrationNumber: regNum.toUpperCase(),
+          vin: regNum.toUpperCase(),
+          capacity: parseFloat(capacity),
+          status
+        };
+        if (editingVehicle) {
+          await apiService.vehicles.update(editingVehicle.id, payload);
+          showToast('Vehicle profile updated on backend!');
+        } else {
+          await apiService.vehicles.create(payload);
+          showToast('New vehicle registered on backend!');
+        }
+        loadVehicles();
+      } catch (err) {
+        console.warn("Backend save failed, saved locally.", err);
+      }
+    };
+    runSave();
+
     setIsDialogOpen(false);
   };
 
   const handleDelete = (id) => {
     if (confirm('Are you sure you want to delete this vehicle from the registry?')) {
-      setVehicles(vehicles.filter((v) => v.id !== id));
-      showToast('Vehicle registry entry deleted successfully.', 'info');
+      const runDelete = async () => {
+        try {
+          await apiService.vehicles.delete(id);
+          showToast('Vehicle entry deleted from backend.', 'info');
+          loadVehicles();
+        } catch (err) {
+          console.warn("Backend delete failed, removing locally.", err);
+          setVehicles(vehicles.filter((v) => v.id !== id));
+          showToast('Vehicle registry entry deleted locally.', 'info');
+        }
+      };
+      runDelete();
     }
   };
 

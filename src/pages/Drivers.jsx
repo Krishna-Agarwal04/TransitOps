@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { apiService } from '../services/api';
 
 // Mock driver profiles for dynamic frontend demo
 const INITIAL_DRIVERS = [
@@ -30,6 +31,38 @@ export default function Drivers() {
   const { user, ROLES } = useAuth();
   const { showToast } = useToast();
   const [drivers, setDrivers] = useState(INITIAL_DRIVERS);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadDrivers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await apiService.drivers.getAll();
+      if (res && res.data) {
+        const backendDrivers = res.data.map(d => {
+          const match = INITIAL_DRIVERS.find(idr => idr.licenseNumber.toLowerCase() === d.licenseNumber.toLowerCase());
+          return {
+            id: d.id.toString(),
+            name: d.name,
+            licenseNumber: d.licenseNumber,
+            licenseCategory: d.licenseCategory || (match ? match.licenseCategory : 'Class A'),
+            licenseExpiryDate: d.licenseExpiry ? d.licenseExpiry.split('T')[0] : (match ? match.licenseExpiryDate : '2027-12-31'),
+            contactNumber: d.phone || d.contactNumber || (match ? match.contactNumber : '+91 98765 43210'),
+            safetyScore: d.safetyScore || (match ? match.safetyScore : 90),
+            status: d.status || 'AVAILABLE'
+          };
+        });
+        setDrivers(backendDrivers);
+      }
+    } catch (err) {
+      console.warn("Could not load drivers from backend, using mock fallback.", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadDrivers();
+  }, []);
 
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -121,13 +154,47 @@ export default function Drivers() {
       showToast('New driver registered successfully!');
     }
 
+    const runSave = async () => {
+      try {
+        const payload = {
+          name,
+          email: `${name.replace(/\s+/g, '').toLowerCase()}@transitops.com`,
+          phone: contact,
+          licenseNumber: licenseNum.toUpperCase(),
+          licenseExpiry: new Date(expiryDate).toISOString(),
+          status
+        };
+        if (editingDriver) {
+          await apiService.drivers.update(editingDriver.id, payload);
+          showToast('Driver profile updated on backend!');
+        } else {
+          await apiService.drivers.create(payload);
+          showToast('New driver registered on backend!');
+        }
+        loadDrivers();
+      } catch (err) {
+        console.warn("Backend save failed, saved locally.", err);
+      }
+    };
+    runSave();
+
     setIsDialogOpen(false);
   };
 
   const handleDelete = (id) => {
     if (confirm('Are you sure you want to remove this driver profile?')) {
-      setDrivers(drivers.filter((d) => d.id !== id));
-      showToast('Driver profile deleted successfully.', 'info');
+      const runDelete = async () => {
+        try {
+          await apiService.drivers.delete(id);
+          showToast('Driver profile deleted from backend.', 'info');
+          loadDrivers();
+        } catch (err) {
+          console.warn("Backend delete failed, removing locally.", err);
+          setDrivers(drivers.filter((d) => d.id !== id));
+          showToast('Driver profile deleted locally.', 'info');
+        }
+      };
+      runDelete();
     }
   };
 

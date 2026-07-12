@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { apiService } from '../services/api';
 
 // Mock shared states for Vehicles & Drivers to test validations
 const MOCK_VEHICLES = [
@@ -51,6 +52,67 @@ export default function Trips() {
   const [trips, setTrips] = useState(INITIAL_TRIPS);
   const [vehicles, setVehicles] = useState(MOCK_VEHICLES);
   const [drivers, setDrivers] = useState(MOCK_DRIVERS);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const resVehicles = await apiService.vehicles.getAll();
+      if (resVehicles && resVehicles.data) {
+        setVehicles(resVehicles.data.map(v => {
+          const match = MOCK_VEHICLES.find(mv => mv.registrationNumber.toLowerCase() === v.registrationNumber.toLowerCase());
+          return {
+            id: v.id.toString(),
+            name: v.model || v.name || (match ? match.name : 'Unknown Model'),
+            registrationNumber: v.registrationNumber,
+            type: v.type || (match ? match.type : 'Truck'),
+            maxLoadCapacity: v.capacity || (match ? match.maxLoadCapacity : 5000),
+            odometer: v.odometer || (match ? match.odometer : 10000),
+            status: v.status || 'AVAILABLE'
+          };
+        }));
+      }
+
+      const resDrivers = await apiService.drivers.getAll();
+      if (resDrivers && resDrivers.data) {
+        setDrivers(resDrivers.data.map(d => {
+          const match = MOCK_DRIVERS.find(md => md.licenseNumber.toLowerCase() === d.licenseNumber.toLowerCase());
+          return {
+            id: d.id.toString(),
+            name: d.name,
+            licenseNumber: d.licenseNumber,
+            licenseExpiryDate: d.licenseExpiry ? d.licenseExpiry.split('T')[0] : (match ? match.licenseExpiryDate : '2027-12-31'),
+            status: d.status || 'AVAILABLE'
+          };
+        }));
+      }
+
+      const resTrips = await apiService.trips.getAll();
+      if (resTrips && resTrips.data) {
+        setTrips(resTrips.data.map(t => ({
+          id: `TRP-${t.id}`,
+          source: t.startLocation,
+          destination: t.endLocation,
+          vehicleId: t.vehicleId.toString(),
+          vehicleName: t.vehicle?.model || `Vehicle #${t.vehicleId}`,
+          driverId: t.driverId.toString(),
+          driverName: t.driver?.name || `Driver #${t.driverId}`,
+          cargoWeight: t.cargoWeight,
+          plannedDistance: t.plannedDistance || 120,
+          status: t.status,
+          date: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Just Now'
+        })));
+      }
+    } catch (err) {
+      console.warn("Could not load dispatches from backend, using mock fallback data.", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadData();
+  }, []);
 
   // Search/Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -134,6 +196,29 @@ export default function Trips() {
     
     setTrips([newTrip, ...trips]);
     showToast(`Trip ${newTrip.id} dispatched successfully!`);
+
+    const runDispatch = async () => {
+      try {
+        const payload = {
+          vehicleId: parseInt(selectedVehicleId),
+          driverId: parseInt(selectedDriverId),
+          startLocation: source,
+          endLocation: destination,
+          cargoWeight: parseFloat(cargoWeight)
+        };
+        // Shubh's routes: POST /api/trips to create, then PATCH /api/trips/:id/dispatch
+        const res = await apiService.trips.create(payload);
+        if (res && res.data) {
+          await apiService.trips.dispatch(res.data.id);
+          showToast(`Trip ${newTrip.id} dispatched on backend!`);
+        }
+        loadData();
+      } catch (err) {
+        console.warn("Backend dispatch failed, updated locally.", err);
+      }
+    };
+    runDispatch();
+
     setIsDispatchOpen(false);
   };
 
@@ -184,6 +269,23 @@ export default function Trips() {
     } : d));
 
     showToast(`Trip ${selectedTrip.id} marked as completed.`);
+
+    const runComplete = async () => {
+      try {
+        const tripId = selectedTrip.id.replace('TRP-', '');
+        const payload = {
+          finalOdometer: finalOdoNum,
+          fuelConsumed: parseFloat(fuelConsumed)
+        };
+        await apiService.trips.complete(tripId, payload);
+        showToast(`Trip ${selectedTrip.id} completed on backend!`);
+        loadData();
+      } catch (err) {
+        console.warn("Backend completion failed, completed locally.", err);
+      }
+    };
+    runComplete();
+
     setIsCompleteOpen(false);
   };
 
@@ -195,6 +297,18 @@ export default function Trips() {
       setVehicles(vehicles.map(v => v.id === trip.vehicleId ? { ...v, status: 'AVAILABLE' } : v));
       setDrivers(drivers.map(d => d.id === trip.driverId ? { ...d, status: 'AVAILABLE' } : d));
       showToast(`Trip ${trip.id} has been cancelled.`, 'info');
+
+      const runCancel = async () => {
+        try {
+          const tripId = trip.id.replace('TRP-', '');
+          await apiService.trips.cancel(tripId);
+          showToast(`Trip ${trip.id} cancelled on backend!`, 'info');
+          loadData();
+        } catch (err) {
+          console.warn("Backend cancel failed, cancelled locally.", err);
+        }
+      };
+      runCancel();
     }
   };
 

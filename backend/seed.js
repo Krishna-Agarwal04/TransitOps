@@ -2,21 +2,28 @@ import { prisma } from './server/db.js';
 import bcrypt from 'bcrypt';
 
 const users = [
-  { email: 'manager@transitops.com', password: 'password', name: 'Fleet Manager', role: 'FLEET_MANAGER' },
-  { email: 'driver@transitops.com', password: 'password', name: 'Driver User', role: 'DRIVER' },
-  { email: 'safety@transitops.com', password: 'password', name: 'Safety Officer', role: 'SAFETY_OFFICER' },
-  { email: 'finance@transitops.com', password: 'password', name: 'Financial Analyst', role: 'FINANCIAL_ANALYST' }
+  { email: 'manager@transitops.com', password: 'Password123', name: 'Fleet Manager', role: 'FLEET_MANAGER' },
+  { email: 'driver@transitops.com', password: 'Password123', name: 'Driver User', role: 'DRIVER' },
+  { email: 'safety@transitops.com', password: 'Password123', name: 'Safety Officer', role: 'SAFETY_OFFICER' },
+  { email: 'finance@transitops.com', password: 'Password123', name: 'Financial Analyst', role: 'FINANCIAL_ANALYST' }
 ];
 
 async function main() {
-  console.log('Seeding initial system users into database...');
+  console.log('Updating seeded users with password "Password123"...');
   for (const u of users) {
     const hashedPassword = await bcrypt.hash(u.password, 10);
     const existing = await prisma.user.findUnique({
       where: { email: u.email }
     });
 
-    if (!existing) {
+    if (existing) {
+      // Update password
+      await prisma.user.update({
+        where: { email: u.email },
+        data: { password: hashedPassword }
+      });
+      console.log(`Updated password for user: ${u.email}`);
+    } else {
       const created = await prisma.user.create({
         data: {
           email: u.email,
@@ -26,8 +33,6 @@ async function main() {
         }
       });
       console.log(`Created user: ${created.email} (${created.role})`);
-    } else {
-      console.log(`User already exists: ${u.email}`);
     }
   }
   console.log('Seeding complete.');
@@ -40,5 +45,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-    // Also disconnect the pool if needed, but disconnect is enough
   });
